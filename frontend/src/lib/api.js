@@ -17,3 +17,6 @@ export const mediaUrl = (url) => {
   if (url.startsWith("http") || url.startsWith("data:")) return url;
   return `${process.env.REACT_APP_BACKEND_URL}${url}`;
 };
+
+// Dodaj tę linijkę na samym końcu:
+export default api;
