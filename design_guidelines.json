@@ -1,0 +1,94 @@
+{
+  "theme_strategy": "dark_luxury",
+  "typography": {
+    "headings": {
+      "family": "Cormorant Garamond",
+      "weights": ["300", "400", "600"],
+      "usage": "H1, H2, H3 - Use for elegant, cinematic storytelling",
+      "classes": "font-serif tracking-tight"
+    },
+    "body": {
+      "family": "Manrope",
+      "weights": ["300", "400", "500"],
+      "usage": "Paragraphs, UI elements, data tables",
+      "classes": "font-sans leading-relaxed"
+    },
+    "accent_labels": {
+      "family": "Manrope",
+      "weights": ["600"],
+      "classes": "uppercase tracking-[0.2em] text-xs font-semibold"
+    }
+  },
+  "colors": {
+    "Deep Navy": "#081A2C",
+    "Ocean Blue": "#0F4C81",
+    "Sand": "#E8DCC2",
+    "Gold": "#D4AF37",
+    "White": "#F9FAFB",
+    "usage_rules": {
+      "background": "Deep Navy (#081A2C) as the primary base. NO pure black. Use Ocean Blue (#0F4C81) for subtle gradient glows.",
+      "text": "Sand (#E8DCC2) for readable body text on dark backgrounds. White (#F9FAFB) for high-contrast headings.",
+      "accents": "Gold (#D4AF37) for buttons, borders, stars, and active states.",
+      "glass": "bg-[#081A2C]/40 backdrop-blur-xl border border-[#E8DCC2]/10"
+    }
+  },
+  "visual_enhancers": {
+    "glassmorphism": "High-end crystal glass: backdrop-blur-2xl bg-[#081A2C]/60 border border-white/10 shadow-[0_8px_32px_rgba(0,0,0,0.4)]",
+    "noise_texture": "Subtle SVG grain overlay mixed with opacity 0.03 to break digital flatness.",
+    "wave_animation": "Use SVG paths with Framer Motion or CSS keyframes to create a very slow, subtle, overlapping wave motion at the bottom of the hero section, glowing with Ocean Blue and Gold.",
+    "borders": "1px solid rgba(212, 175, 55, 0.3) for elegant dividers. Avoid thick borders."
+  },
+  "motion": {
+    "scroll": "MANDATORY: Use 'lenis' for smooth scrolling. This is critical for the premium 10k PLN feel. Wrap the app in a Lenis provider.",
+    "hero_reveal": "Signature SOTD masked line-by-line text reveal for 'Trio Molo Cafe' using framer-motion. overflow-hidden on parent, y: 100% -> 0 on child.",
+    "parallax": "Use Framer Motion useScroll and useTransform to move background images slower than foreground elements, especially in the Atmosphere section.",
+    "stagger": "List items (menu, gallery, info cards) must stagger in using framer-motion delayChildren and staggerChildren."
+  },
+  "layouts": {
+    "spacing": "SOTD-level generous spacing. Sections must have py-24 or py-32. Don't cramp elements. Let the negative space breathe.",
+    "bento_info_bar": "4 overlapping glassmorphism cards at the bottom of the hero section, pulling the user into the scroll. Use grid-cols-2 md:grid-cols-4 gap-4.",
+    "about_section": "Asymmetric 2-column layout. Image takes 5/12, Text takes 7/12. Image should have a slight parallax offset.",
+    "masonry_gallery": "Dynamic masonry grid, overlapping edges, 1px gold border on hover. Lightbox integration.",
+    "marquee": "Slow editorial marquee passing behind or over the Atmosphere section with words like 'SUNSET • COCKTAILS • OCEAN BREEZE • PREMIUM ROAST'"
+  },
+  "components": {
+    "Hero": "Full viewport height. Background image with sunset/ocean, heavy vignette/overlay (bg-gradient-to-b from-[#081A2C]/30 via-transparent to-[#081A2C]). Kinetic typography. 2 minimalist buttons ('Zobacz menu' - Gold filled, 'Wyznacz trasę' - outline). Animated scroll arrow pointing down.",
+    "InfoBar": "4 cards: 'Molo Spacerowe Pokład Dolny', '4.1 1200+ opinii', '20-40 zł', 'Widok na morze'. Glassmorphism, overlapping hero bottom edge.",
+    "MenuPreview": "Minimalist list. Items: Sex on the Beach 39zł, Ciasto dnia 23zł, Cappuccino 17zł, Aperol Spritz 35zł. Hovering over an item reveals its image floating nearby (cursor follow effect).",
+    "AtmosphereParallax": "Panoramic ocean view, slow parallax, huge typography 'POCZUJ KLIMAT MOLO'.",
+    "AdminPanel": "Clean, Shadcn-based dashboard. Tables for menu items, grid for gallery management. Use Sand/Navy theme but optimized for data density (smaller fonts, tighter padding)."
+  },
+  "media": {
+    "hero_sunset_pier": "https://images.unsplash.com/photo-1474224160858-bde653bbc5a8",
+    "cocktail_aperol": "https://images.unsplash.com/photo-1576670391698-81458215a5e5",
+    "coffee_espresso": "https://images.pexels.com/photos/20104040/pexels-photo-20104040.jpeg",
+    "terrace_lounge": "https://images.unsplash.com/photo-1782714024679-c006e10cd0ae",
+    "terrace_pool": "https://images.unsplash.com/photo-1781511832650-4001a029803a",
+    "beach_club": "https://images.unsplash.com/photo-1782714027564-c3ff30b885bd"
+  },
+  "libraries_to_install": [
+    "framer-motion",
+    "lenis",
+    "lucide-react",
+    "react-fast-marquee",
+    "clsx",
+    "tailwind-merge",
+    "yet-another-react-lightbox",
+    "react-photo-album"
+  ],
+  "accessibility": {
+    "contrast": "Ensure Sand text against Deep Navy meets 4.5:1 ratio. Gold buttons need dark text for contrast.",
+    "focus": "All interactive elements MUST have focus-visible:ring-2 focus-visible:ring-[#D4AF37].",
+    "data_testid": "MANDATORY: Add data-testid to all buttons, links, forms, and major sections."
+  },
+  "UNIVERSAL GUIDELINES FOR MAIN AGENT": [
+    "You are building a premium 10,000 PLN Awwwards site. DO NOT use generic Vercel/Stripe templates.",
+    "Use JS/JSX files only. NO TypeScript (no .tsx).",
+    "DO NOT center align the entire App. Left-align text naturally, use deliberate asymmetry.",
+    "NEVER use generic placeholder images. Use the provided Unsplash/Pexels URLs.",
+    "NEVER use pure transparent backgrounds for dropdowns or modals over images. Always use the defined glassmorphism.",
+    "Ensure framer-motion and lenis work seamlessly. Prevent layout jumping by using proper CSS grid/flex wrappers around motion elements.",
+    "The CMS Admin Panel is required. It should manage the Menu and Gallery. Mock the backend APIs if necessary, but the UI must be fully functional.",
+    "Animations must be smooth and performant. Use transform and opacity exclusively for animations."
+  ]
+}
