@@ -250,26 +250,44 @@ function ReservationsManager() {
 
 function MessagesManager() {
   const [items, setItems] = useState([]);
-  const load = useCallback(() => api.get("/messages").then((r) => setItems(r.data)), []);
-  useEffect(() => { load(); }, [load]);
+  
+  const load = useCallback(() => {
+    api
+      .get("/messages")
+      .then((r) => setItems(Array.isArray(r.data) ? r.data : []))
+      .catch(() => setItems([]));
+  }, []);
+
+  useEffect(() => {
+    load();
+  }, [load]);
 
   const remove = async (id) => {
     if (!window.confirm("Usunąć wiadomość?")) return;
-    await api.delete(`/messages/${id}`); load();
+    await api.delete(`/messages/${id}`);
+    load();
   };
 
-  if (items.length === 0) return <p className="text-sand/50 text-sm py-10 text-center">Brak wiadomości.</p>;
+  const safeItems = Array.isArray(items) ? items : [];
+
+  if (safeItems.length === 0) {
+    return <p className="text-sand/50 text-sm py-10 text-center">Brak wiadomości.</p>;
+  }
 
   return (
     <div className="grid gap-3">
-      {items.map((m) => (
+      {safeItems.map((m) => (
         <div key={m.id} className="glass rounded-xl p-5" data-testid={`message-row-${m.id}`}>
           <div className="flex items-start justify-between gap-4">
             <div className="min-w-0">
               <div className="text-cream font-medium">{m.name}</div>
-              <a href={`mailto:${m.email}`} className="text-xs text-gold inline-flex items-center gap-1 hover:underline"><Mail size={11} /> {m.email}</a>
+              <a href={`mailto:${m.email}`} className="text-xs text-gold inline-flex items-center gap-1 hover:underline">
+                <Mail size={11} /> {m.email}
+              </a>
             </div>
-            <button onClick={() => remove(m.id)} className="text-sand/50 hover:text-red-400 shrink-0" data-testid={`del-msg-${m.id}`}><Trash2 size={15} /></button>
+            <button onClick={() => remove(m.id)} className="text-sand/50 hover:text-red-400 shrink-0" data-testid={`del-msg-${m.id}`}>
+              <Trash2 size={15} />
+            </button>
           </div>
           <p className="text-sm text-sand/80 mt-3 leading-relaxed">{m.message}</p>
           <div className="text-[11px] text-sand/40 mt-3">{(m.created_at || "").slice(0, 16).replace("T", " ")}</div>
