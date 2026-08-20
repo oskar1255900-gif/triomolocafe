@@ -39,19 +39,12 @@ export const MenuPreview = () => {
   const [items, setItems] = useState([]);
 
   useEffect(() => {
-    api.get("/menu", { params: { bestseller: true } })
-      .then((r) => {
-        // Zabezpieczenie: zapisuj w stanie tylko jeśli odebrano prawdziwą tablicę
-        if (Array.isArray(r.data)) {
-          setItems(r.data);
-        } else {
-          setItems([]);
-        }
-      })
+    api
+      .get("/menu", { params: { bestseller: true } })
+      .then((r) => setItems(Array.isArray(r.data) ? r.data : []))
       .catch(() => setItems([]));
   }, []);
 
-  // Zabezpieczenie: upewniamy się, że bezpiecznie pracujemy na tablicy
   const safeItems = Array.isArray(items) ? items : [];
 
   return (
@@ -76,7 +69,7 @@ export const MenuPreview = () => {
             ? Array.from({ length: 4 }).map((_, i) => (
                 <div key={i} className="rounded-2xl h-80 skeleton" />
               ))
-            : safeItems.slice(0, 4).map((item, i) => <Card key={item._id || i} item={item} i={i} />)}
+            : safeItems.slice(0, 4).map((item, i) => <Card key={item._id || item.id || i} item={item} i={i} />)}
         </div>
 
         <Reveal delay={0.2} className="mt-14 flex justify-center">
