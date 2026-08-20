@@ -1,6 +1,7 @@
 import { useEffect, useState } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { Menu, X } from "lucide-react";
+import { ReservationModal } from "@/components/ReservationModal";
 
 const LINKS = [
   { label: "O nas", href: "#o-nas" },
@@ -13,6 +14,7 @@ const LINKS = [
 export const Navbar = () => {
   const [scrolled, setScrolled] = useState(false);
   const [open, setOpen] = useState(false);
+  const [resOpen, setResOpen] = useState(false);
 
   useEffect(() => {
     const onScroll = () => setScrolled(window.scrollY > 60);
@@ -49,13 +51,13 @@ export const Navbar = () => {
                 <span className="absolute -bottom-1 left-0 w-0 h-px bg-gold transition-all duration-300 group-hover:w-full" />
               </a>
             ))}
-            <a
-              href="#kontakt"
+            <button
+              onClick={() => setResOpen(true)}
               className="btn-gold rounded-full px-5 py-2 text-sm font-semibold"
               data-testid="nav-reserve"
             >
               Rezerwuj stolik
-            </a>
+            </button>
           </nav>
 
           <button
@@ -98,10 +100,19 @@ export const Navbar = () => {
                   {l.label}
                 </motion.a>
               ))}
+              <button
+                onClick={() => { setOpen(false); setResOpen(true); }}
+                className="btn-gold rounded-full px-6 py-3 text-sm font-semibold mt-4 self-start"
+                data-testid="mobile-reserve"
+              >
+                Rezerwuj stolik
+              </button>
             </nav>
           </motion.div>
         )}
       </AnimatePresence>
+
+      <ReservationModal open={resOpen} onClose={() => setResOpen(false)} />
     </>
   );
 };

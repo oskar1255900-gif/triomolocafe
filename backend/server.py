@@ -5,7 +5,7 @@ import os
 ROOT_DIR = Path(__file__).parent
 load_dotenv(ROOT_DIR / '.env')
 
-from fastapi import FastAPI, APIRouter, HTTPException, Request, Depends
+from fastapi import FastAPI, APIRouter, HTTPException, Request, Depends, UploadFile, File, Response
 from starlette.middleware.cors import CORSMiddleware
 from motor.motor_asyncio import AsyncIOMotorClient
 import logging
@@ -15,6 +15,46 @@ from datetime import datetime, timezone, timedelta
 from bson import ObjectId
 import bcrypt
 import jwt
+import uuid
+import requests
+
+# ---------- Object storage ----------
+STORAGE_BASE = (os.environ.get("INTEGRATION_PROXY_URL") or "").strip() or "https://integrations.emergentagent.com"
+STORAGE_URL = STORAGE_BASE.rstrip("/") + "/objstore/api/v1/storage"
+EMERGENT_KEY = os.environ.get("EMERGENT_LLM_KEY")
+APP_NAME = "trio-molo-cafe"
+MIME_TYPES = {"jpg": "image/jpeg", "jpeg": "image/jpeg", "png": "image/png", "gif": "image/gif", "webp": "image/webp"}
+storage_key = None
+
+
+def init_storage(force: bool = False):
+    global storage_key
+    if storage_key and not force:
+        return storage_key
+    resp = requests.post(f"{STORAGE_URL}/init", json={"emergent_key": EMERGENT_KEY}, timeout=30)
+    resp.raise_for_status()
+    storage_key = resp.json()["storage_key"]
+    return storage_key
+
+
+def put_object(path: str, data: bytes, content_type: str) -> dict:
+    key = init_storage()
+    resp = requests.put(f"{STORAGE_URL}/objects/{path}", headers={"X-Storage-Key": key, "Content-Type": content_type}, data=data, timeout=120)
+    if resp.status_code == 404:
+        key = init_storage(force=True)
+        resp = requests.put(f"{STORAGE_URL}/objects/{path}", headers={"X-Storage-Key": key, "Content-Type": content_type}, data=data, timeout=120)
+    resp.raise_for_status()
+    return resp.json()
+
+
+def get_object(path: str):
+    key = init_storage()
+    resp = requests.get(f"{STORAGE_URL}/objects/{path}", headers={"X-Storage-Key": key}, timeout=60)
+    if resp.status_code == 404:
+        key = init_storage(force=True)
+        resp = requests.get(f"{STORAGE_URL}/objects/{path}", headers={"X-Storage-Key": key}, timeout=60)
+    resp.raise_for_status()
+    return resp.content, resp.headers.get("Content-Type", "application/octet-stream")
 
 # MongoDB
 mongo_url = os.environ['MONGO_URL']
@@ -136,6 +176,19 @@ class ContactInput(BaseModel):
     message: str
 
 
+class ReservationInput(BaseModel):
+    name: str
+    phone: str
+    date: str
+    time: str = ""
+    guests: int = 2
+    note: str = ""
+
+
+class ReservationStatusInput(BaseModel):
+    status: str  # accepted | rejected | pending
+
+
 # ---------- Auth routes ----------
 @api_router.post("/auth/login")
 async def login(data: LoginInput):
@@ -226,8 +279,90 @@ async def contact(data: ContactInput):
     doc = data.model_dump()
     doc["recipient"] = "trio.molo.cafe@onet.pl"
     doc["created_at"] = datetime.now(timezone.utc).isoformat()
+    doc["read"] = False
     await db.messages.insert_one(doc)
     return {"ok": True, "message": "Dziękujemy! Wiadomość została zapisana."}
+
+
+@api_router.get("/messages")
+async def get_messages(user: dict = Depends(get_current_user)):
+    docs = await db.messages.find().sort("created_at", -1).to_list(500)
+    for d in docs:
+        d["id"] = str(d.pop("_id"))
+    return docs
+
+
+@api_router.delete("/messages/{msg_id}")
+async def delete_message(msg_id: str, user: dict = Depends(get_current_user)):
+    await db.messages.delete_one({"_id": ObjectId(msg_id)})
+    return {"ok": True}
+
+
+# ---------- Reservations ----------
+@api_router.post("/reservations")
+async def create_reservation(data: ReservationInput):
+    doc = data.model_dump()
+    doc["status"] = "pending"
+    doc["created_at"] = datetime.now(timezone.utc).isoformat()
+    await db.reservations.insert_one(doc)
+    return {"ok": True, "message": "Dziękujemy! Twoja prośba o rezerwację została wysłana. Skontaktujemy się wkrótce."}
+
+
+@api_router.get("/reservations")
+async def get_reservations(user: dict = Depends(get_current_user)):
+    docs = await db.reservations.find().sort("created_at", -1).to_list(500)
+    for d in docs:
+        d["id"] = str(d.pop("_id"))
+    return docs
+
+
+@api_router.put("/reservations/{res_id}/status")
+async def update_reservation(res_id: str, data: ReservationStatusInput, user: dict = Depends(get_current_user)):
+    await db.reservations.update_one({"_id": ObjectId(res_id)}, {"$set": {"status": data.status}})
+    return {"ok": True}
+
+
+@api_router.delete("/reservations/{res_id}")
+async def delete_reservation(res_id: str, user: dict = Depends(get_current_user)):
+    await db.reservations.delete_one({"_id": ObjectId(res_id)})
+    return {"ok": True}
+
+
+# ---------- File upload ----------
+@api_router.post("/upload")
+async def upload_file(file: UploadFile = File(...), user: dict = Depends(get_current_user)):
+    ext = (file.filename.rsplit(".", 1)[-1] if "." in file.filename else "bin").lower()
+    if ext not in MIME_TYPES:
+        raise HTTPException(status_code=400, detail="Dozwolone są tylko obrazy (jpg, png, gif, webp)")
+    path = f"{APP_NAME}/gallery/{uuid.uuid4()}.{ext}"
+    data = await file.read()
+    content_type = MIME_TYPES.get(ext, file.content_type or "application/octet-stream")
+    try:
+        result = put_object(path, data, content_type)
+    except Exception as e:
+        logger.error(f"Upload failed: {e}")
+        raise HTTPException(status_code=500, detail="Nie udało się wgrać pliku")
+    stored_path = result["path"]
+    await db.files.insert_one({
+        "storage_path": stored_path,
+        "content_type": content_type,
+        "original_filename": file.filename,
+        "is_deleted": False,
+        "created_at": datetime.now(timezone.utc).isoformat(),
+    })
+    return {"url": f"/api/files/{stored_path}", "path": stored_path}
+
+
+@api_router.get("/files/{path:path}")
+async def serve_file(path: str):
+    record = await db.files.find_one({"storage_path": path, "is_deleted": False})
+    if not record:
+        raise HTTPException(status_code=404, detail="Nie znaleziono pliku")
+    try:
+        data, content_type = get_object(path)
+    except Exception:
+        raise HTTPException(status_code=404, detail="Nie znaleziono pliku")
+    return Response(content=data, media_type=record.get("content_type", content_type), headers={"Cache-Control": "public, max-age=86400"})
 
 
 @api_router.get("/")
@@ -303,6 +438,11 @@ async def startup():
     await db.users.create_index("email", unique=True)
     await seed_admin()
     await seed_content()
+    try:
+        init_storage()
+        logger.info("Storage initialized")
+    except Exception as e:
+        logger.error(f"Storage init failed: {e}")
 
 
 @app.on_event("shutdown")

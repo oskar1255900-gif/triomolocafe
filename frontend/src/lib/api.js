@@ -11,3 +11,9 @@ api.interceptors.request.use((config) => {
 });
 
 export { API };
+
+export const mediaUrl = (url) => {
+  if (!url) return "";
+  if (url.startsWith("http") || url.startsWith("data:")) return url;
+  return `${process.env.REACT_APP_BACKEND_URL}${url}`;
+};

@@ -2,7 +2,7 @@ import { useEffect, useMemo, useState } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import Lightbox from "yet-another-react-lightbox";
 import "yet-another-react-lightbox/styles.css";
-import { api } from "@/lib/api";
+import { api, mediaUrl } from "@/lib/api";
 import { Reveal, Kicker } from "@/components/Reveal";
 
 const CATS = ["Wszystkie", "Taras", "Kawa", "Ciasta", "Koktajle", "Zachód słońca"];
@@ -21,7 +21,7 @@ export const Gallery = () => {
     [all, cat]
   );
 
-  const slides = filtered.map((g) => ({ src: g.url, description: g.caption }));
+  const slides = filtered.map((g) => ({ src: mediaUrl(g.url), description: g.caption }));
 
   return (
     <section id="galeria" className="relative py-28 md:py-36 px-6 lg:px-10" data-testid="gallery-section">
@@ -65,7 +65,7 @@ export const Gallery = () => {
                 data-testid={`gallery-item-${i}`}
               >
                 <img
-                  src={g.url}
+                  src={mediaUrl(g.url)}
                   alt={g.caption}
                   loading="lazy"
                   className="w-full object-cover transition-transform duration-[900ms] group-hover:scale-105"
