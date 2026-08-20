@@ -39,8 +39,20 @@ export const MenuPreview = () => {
   const [items, setItems] = useState([]);
 
   useEffect(() => {
-    api.get("/menu", { params: { bestseller: true } }).then((r) => setItems(r.data)).catch(() => {});
+    api.get("/menu", { params: { bestseller: true } })
+      .then((r) => {
+        // Zabezpieczenie: zapisuj w stanie tylko jeśli odebrano prawdziwą tablicę
+        if (Array.isArray(r.data)) {
+          setItems(r.data);
+        } else {
+          setItems([]);
+        }
+      })
+      .catch(() => setItems([]));
   }, []);
+
+  // Zabezpieczenie: upewniamy się, że bezpiecznie pracujemy na tablicy
+  const safeItems = Array.isArray(items) ? items : [];
 
   return (
     <section id="menu" className="relative py-28 md:py-36 px-6 lg:px-10" data-testid="menu-section">
@@ -60,11 +72,11 @@ export const MenuPreview = () => {
         </div>
 
         <div className="grid sm:grid-cols-2 lg:grid-cols-4 gap-6">
-          {items.length === 0
+          {safeItems.length === 0
             ? Array.from({ length: 4 }).map((_, i) => (
                 <div key={i} className="rounded-2xl h-80 skeleton" />
               ))
-            : items.slice(0, 4).map((item, i) => <Card key={item._id} item={item} i={i} />)}
+            : safeItems.slice(0, 4).map((item, i) => <Card key={item._id || i} item={item} i={i} />)}
         </div>
 
         <Reveal delay={0.2} className="mt-14 flex justify-center">
