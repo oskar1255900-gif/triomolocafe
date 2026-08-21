@@ -1,6 +1,9 @@
 import axios from "axios";
 
-const API = `${process.env.REACT_APP_BACKEND_URL}/api`;
+// Pobieramy bazowy URL backendu (usuwamy ewentualny "/api" z końca, jeśli został wpisany w zmiennej)
+const BASE_URL = (process.env.REACT_APP_API_URL || "").replace(/\/api\/?$/, "");
+
+const API = `${BASE_URL}/api`;
 
 export const api = axios.create({ baseURL: API });
 
@@ -15,8 +18,7 @@ export { API };
 export const mediaUrl = (url) => {
   if (!url) return "";
   if (url.startsWith("http") || url.startsWith("data:")) return url;
-  return `${process.env.REACT_APP_BACKEND_URL}${url}`;
+  return `${BASE_URL}${url.startsWith("/") ? "" : "/"}${url}`;
 };
 
-// Dodaj tę linijkę na samym końcu:
 export default api;
