@@ -99,7 +99,7 @@
     "postcss": "8.5.10",
     "tailwindcss": "3.4.17"
   },
-  "resolutions": {
+  "overrides": {
     "ajv": "^6.12.6",
     "react-router": "7.15.1",
     "node-forge": "1.4.0",
@@ -143,6 +143,5 @@
     "**/jest-util/picomatch": "2.3.2",
     "**/tinyglobby/picomatch": "4.0.4",
     "http-proxy-middleware": "2.0.10"
-  },
-  "packageManager": "yarn@1.22.22"
+  }
 }
